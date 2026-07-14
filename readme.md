@@ -216,13 +216,120 @@ Wanneer een pagina niet kan worden gelezen, wordt een waarschuwing gelogd en gaa
 
 # Mogelijke uitbreidingen
 
-- Ondersteuning voor meerdere PDF-formaten.
-- Verwerken van meerdere PDF-bestanden tegelijk.
-- Export naar Excel (`.xlsx`).
-- Unit tests.
-- Configuratie via een configuratiebestand.
-- Command-line argumenten voor invoer- en uitvoerbestanden.
 
+# Controlepunten Brandstoftransacties
+
+## 1. Hoogste brandstofkosten
+
+Controleer de voertuigen of bestuurders met de hoogste brandstofkosten.
+
+> **Opmerking:** Hoge brandstofkosten betekenen niet automatisch dat er sprake is van fraude, maar deze dossiers verdienen als eerste aandacht.
+
+---
+
+## 2. Ontbrekende kilometerstanden
+
+Controleer transacties waarbij de kilometerstand **0 km** is.
+
+### Controle nodig
+
+Bij brandstoftransacties dient de bestuurder uit te leggen waarom geen kilometerstand is ingevoerd.
+
+### Geen probleem
+
+Een kilometerstand van **0 km** is normaal bij transacties zoals:
+
+- Wasbeurten
+- Smeermiddelen
+
+---
+
+## 3. Kilometerontwikkeling
+
+Controleer of de kilometerstanden logisch oplopen.
+
+### Controlepunten
+
+- Teruglopende kilometerstanden.
+- Onrealistische sprongen in de kilometerstand.
+
+---
+
+## 4. Opvallende tankfrequentie
+
+Controleer het aantal transacties per bestuurder per maand.
+
+Denk hierbij aan:
+
+- Tankbeurten
+- Wasbeurten
+- Smeermiddelen
+- Shoptransacties
+
+Een opvallend hoog aantal transacties kan aanleiding zijn voor nader onderzoek.
+
+---
+
+## 5. Locaties
+
+Controleer of de tanklocaties logisch zijn ten opzichte van de werkzaamheden van de bestuurder.
+
+### Voorbeelden van logische locaties
+
+- Reeuwijk → Gouda
+- Utrecht → Bodegraven
+- Schiedam → Bodegraven
+- Nieuwegein
+
+Deze locaties lijken normaal.
+
+### Extra controle
+
+Bestuurders die regelmatig op onverwachte of ver afgelegen locaties tanken, verdienen extra aandacht. Dit hoeft niet direct op fraude te wijzen (bijvoorbeeld consultants of buitendienstmedewerkers), maar is wel een controlepunt.
+
+---
+
+## 6. Grote tankinhouden
+
+Controleer transacties waarbij:
+
+- 60–70 liter wordt getankt in een kleine auto.
+- Meerdere keren op dezelfde dag wordt getankt.
+
+Dit zijn vaak duidelijke indicatoren die nader onderzocht moeten worden.
+
+---
+
+# Samenvatting van de bevindingen
+
+### Controle nodig
+
+- Ontbrekende kilometerstanden.
+- Auto's met uitzonderlijk hoge maandelijkse brandstofkosten.
+- Bestuurders die zeer frequent tanken.
+
+### Geen bijzonderheden
+
+- Geen teruglopende kilometerstanden.
+- Geen dubbele tankingen op dezelfde dag.
+- Geen extreem grote tankvolumes.
+
+---
+
+# Aanbevolen controles voor een controller
+
+Voor een uitgebreidere analyse kunnen de volgende controles worden uitgevoerd:
+
+- Berekening van het aantal kilometers per liter per bestuurder.
+- Detectie van tanken voordat de tank redelijkerwijs leeg kan zijn.
+- Controle of meer liters worden getankt dan de maximale tankinhoud van het voertuig.
+- Vergelijking van het werkelijke brandstofverbruik met de fabrieksopgave.
+- Detectie van tanktransacties in de avond, het weekend of tijdens vakanties.
+- Toekennen van een fraudescore per bestuurder (0–100).
+- Automatisch dashboard met risicoclassificatie:
+  - 🟢 Groen (laag risico)
+  - 🟠 Oranje (nader onderzoek)
+  - 🔴 Rood (hoog risico)
 ---
 
 # Auteur
