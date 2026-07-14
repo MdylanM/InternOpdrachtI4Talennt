@@ -1,0 +1,175 @@
+from pdfminer.pdfparser import PDFSyntaxError
+from pathlib import Path
+import pdfplumber
+import logging
+import csv
+import re
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s"
+)
+
+def extract_pdf_text(pdf_path: str) -> list[str]:
+    """ 
+    Extracts the text from each page in the PDF.
+
+    Args:
+        pdf_path (str): Path to the PDF file.
+
+    Returns:
+        A list containing the text of each page.
+
+    """
+    pages = []
+
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for pagenumber, page in enumerate(pdf.pages, start=1):
+                try:
+                    text = page.extract_text() or ""
+                    pages.append(text)
+
+                except Exception as e:
+                    logger.warning('Kan de niet uitlezen de pagina %s: %s', pagenumber, e
+                    )
+                    pages.append("")
+
+    except FileNotFoundError:    
+        raise FileNotFoundError(f'PDF file was not found: {pdf_path}')
+    except PermissionError:
+        logger.error("Geen toegang tot PDF bestand: %s", pdf_path)
+        raise
+    except PDFSyntaxError:
+        logger.error("Ongeldige of corrupte PDF: %s", pdf_path)
+        raise
+    except Exception as e:
+        logger.exception(
+            "Onverwachte fout tijdens het openen van PDF %s: %s",
+            pdf_path,
+            e
+        )
+        raise
+
+    return pages
+
+        
+
+def clean_brandstof_text(pages: list[str]) -> str:
+    """
+    Removes all text that will not be used for the fuel transaction.
+
+    Args:
+        Pages (str): text of the fuel invoice file.
+    
+    Returns: 
+        Clean text that can be used to transform into csv. 
+    
+    """
+    text = "\n".join(pages).lower()
+
+    match = re.search(r"brandstof bijlage", text, re.IGNORECASE)
+    if match:
+        text = text[match.end():]
+
+    match = re.search(r"kenteken\s+([a-z0-9-]+)", text, re.IGNORECASE)
+    if not match:
+        return text
+
+    eerste_kenteken = match.group(1)
+
+    tweede = re.search(
+        rf"kenteken\s+{re.escape(eerste_kenteken)}",
+        text[match.end():],
+        re.IGNORECASE,
+    )
+
+    if tweede:
+        text = text[:match.end() + tweede.start()]
+
+    return text
+
+def split_kentekens(text: str) -> list[str]:
+    """ 
+    Splits the text in parts based on the License plates.
+    
+    Args: 
+        text (str): That needs to be grouped by license plate.
+        
+    Returns: 
+        List of blocks. 
+
+    """
+
+    pattern = r"(kenteken\s+[a-z0-9\-]+)"
+    parts = re.split(pattern, text, flags=re.I)
+    blocks = []
+
+    for i in range(1, len(parts), 2):
+        header = parts[i]
+        body = parts[i + 1] if i + 1 < len(parts) else ""
+        blocks.append(header + body)
+
+    return blocks
+
+def text_to_csv(text: list, output_file: str | Path) -> None:
+    """
+    Transforms the text into a csv file.
+
+    Args: 
+        text[str]: text of the fuel invoice.
+    
+    Returns: 
+        None
+    
+    """
+
+    kenteken_pattern = re.compile(
+        r"kenteken\s+([A-Z0-9-]+)([\s\S]*?)(?=kenteken\s+[A-Z0-9-]+|$)",
+        re.IGNORECASE,
+    )
+
+    row_pattern = re.compile(
+        r"(\d{2}-\d{2}-\d{4})\s+"      # Datum
+        r"(\d+)\s+"                    # Bonnummer
+        r"'?(.+?)\s+"                  # Locatie
+        r"([A-Z]{2})\s+"               # Land
+        r"([\d.]+)\s+"                 # Km stand
+        r"(\d+)\s+"                    # Pasnummer
+        r"(.+?)\s+"                    # Brandstof
+        r"(Ja|Nee)\s+"                 # VV
+        r"([\d,]+)\s+"                 # Aantal (L/kWh)
+        r"([\d,]+)\s+"                 # Bedrag
+        r"(\d+%)",                     # BTW
+        re.IGNORECASE,
+    )
+
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        writer.writerow([
+            "Kenteken",
+            "Datum",
+            "Bonnummer",
+            "Locatie",
+            "Land",
+            "KmStand",
+            "Pasnummer",
+            "Brandstof",
+            "VV" ,
+            "Aantal (L/kWh)",
+            "Bedrag",
+            "BTW",
+        ])
+        for i in text:
+            for kenteken_match in kenteken_pattern.finditer(i):
+                kenteken = kenteken_match.group(1)
+                blok = kenteken_match.group(2)
+
+                for row in row_pattern.finditer(blok):
+                    writer.writerow([
+                        kenteken,
+                        *row.groups()
+                    ])
+
