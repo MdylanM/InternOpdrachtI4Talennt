@@ -46,13 +46,13 @@ CSV output
 project/
 │
 ├── data/
-│   └── brandstof.pdf
-│
-├── output/
-│
-├── pdf_preprocessed.py
-├── main.py
+├── src/
+│   └── pdf_preprocessed.py
+│   └── main.py
+│   └── calculations.py
 └── README.md
+└── uv.lock.md
+└── pyproject.toml
 ```
 
 ---
